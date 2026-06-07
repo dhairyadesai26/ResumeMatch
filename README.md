@@ -8,11 +8,7 @@ Built with **React 19, React Router 7, TypeScript, Tailwind CSS, Zustand, PDF Pr
 
 ---
 
-## 🌟 Preview
 
-<img width="100%" alt="ResumeMatch Banner" src="https://kommodo.ai/i/O7QuORtynKDfoPbxjhPO" />
-
----
 
 ## ✨ Key Features
 
