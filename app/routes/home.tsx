@@ -23,6 +23,8 @@ export default function Home() {
   }, [auth.isAuthenticated])
 
   useEffect(() => {
+    if (!auth.isAuthenticated) return; // wait until auth is confirmed
+
     const loadResumes = async () => {
       setLoadingResumes(true);
 
@@ -37,7 +39,7 @@ export default function Home() {
     }
 
     loadResumes()
-  }, []);
+  }, [auth.isAuthenticated]);
 
   return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
     <Navbar />

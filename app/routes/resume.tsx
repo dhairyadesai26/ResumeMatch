@@ -16,6 +16,8 @@ const Resume = () => {
     const [imageUrl, setImageUrl] = useState('');
     const [resumeUrl, setResumeUrl] = useState('');
     const [feedback, setFeedback] = useState<Feedback | null>(null);
+    const [dataLoaded, setDataLoaded] = useState(false);
+    const [noFeedback, setNoFeedback] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -26,24 +28,35 @@ const Resume = () => {
         const loadResume = async () => {
             const resume = await kv.get(`resume:${id}`);
 
-            if(!resume) return;
+            if(!resume) {
+                setDataLoaded(true);
+                setNoFeedback(true);
+                return;
+            }
 
             const data = JSON.parse(resume);
 
-            const resumeBlob = await fs.read(data.resumePath);
-            if(!resumeBlob) return;
+            // Check if this old scan has no feedback (was saved during a broken session)
+            if(!data.feedback || data.feedback === '') {
+                setDataLoaded(true);
+                setNoFeedback(true);
+                return;
+            }
 
-            const pdfBlob = new Blob([resumeBlob], { type: 'application/pdf' });
-            const resumeUrl = URL.createObjectURL(pdfBlob);
-            setResumeUrl(resumeUrl);
+            const resumeBlob = await fs.read(data.resumePath);
+            if(resumeBlob) {
+                const pdfBlob = new Blob([resumeBlob], { type: 'application/pdf' });
+                setResumeUrl(URL.createObjectURL(pdfBlob));
+            }
 
             const imageBlob = await fs.read(data.imagePath);
-            if(!imageBlob) return;
-            const imageUrl = URL.createObjectURL(imageBlob);
-            setImageUrl(imageUrl);
+            if(imageBlob) {
+                setImageUrl(URL.createObjectURL(imageBlob));
+            }
 
             setFeedback(data.feedback);
-            console.log({resumeUrl, imageUrl, feedback: data.feedback });
+            setDataLoaded(true);
+            console.log({ feedback: data.feedback });
         }
 
         loadResume();
@@ -73,7 +86,24 @@ const Resume = () => {
                 </section>
                 <section className="feedback-section">
                     <h2 className="text-4xl !text-black font-bold">Resume Review</h2>
-                    {feedback ? (
+                    {!dataLoaded ? (
+                        // Still loading from KV/FS
+                        <img src="/images/resume-scan-2.gif" className="w-full" />
+                    ) : noFeedback ? (
+                        // Old scan with no feedback - prompt user to re-upload
+                        <div className="flex flex-col gap-4 animate-in fade-in duration-500 mt-6">
+                            <p className="text-gray-600 text-lg">
+                                This resume scan didn't complete successfully. The AI analysis is missing.
+                            </p>
+                            <p className="text-gray-500">
+                                Please upload your resume again to get a fresh analysis.
+                            </p>
+                            <Link to="/upload" className="primary-button w-fit">
+                                Upload Again
+                            </Link>
+                        </div>
+                    ) : feedback ? (
+                        // Has valid feedback
                         <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
                             <Summary feedback={feedback} />
                             <ATS score={feedback.ATS.score || 0} suggestions={feedback.ATS.tips || []} />
